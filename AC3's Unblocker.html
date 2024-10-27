@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC3's Unblocker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212; /* Dark background */
+            color: #ffffff; /* Light text */
+            transition: background-color 0.3s, color 0.3s;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .toolbar {
+            background-color: #1e1e1e; /* Dark toolbar */
+            border-bottom: 1px solid #444;
+            display: flex;
+            align-items: center;
+            padding: 5px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .url-bar {
+            flex: 1;
+            margin: 0 5px;
+        }
+        .url-bar input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            font-size: 14px;
+            background-color: #333; /* Dark input background */
+            color: #fff; /* Light input text */
+        }
+        .button {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #333; /* Dark button */
+            border: 1px solid #444;
+            border-radius: 5px;
+            margin-right: 5px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.2s;
+            color: #fff; /* Light button text */
+        }
+        .button:not(:last-child) {
+            margin-right: 10px; /* Additional spacing between buttons */
+        }
+        .button:hover {
+            background-color: #444; /* Darker on hover */
+        }
+        .tab-container {
+            display: flex;
+            padding: 5px;
+            border-bottom: 1px solid #444;
+            overflow-x: auto;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            background-color: #333; /* Dark tab */
+            border: 1px solid #444;
+            border-radius: 4px 4px 0 0;
+            margin-right: 5px;
+            position: relative;
+            transition: background-color 0.2s;
+            font-size: 14px;
+            flex-grow: 1;
+            color: #fff; /* Light tab text */
+        }
+        .tab.active {
+            background-color: #1e1e1e; /* Dark active tab */
+            border-bottom: 1px solid transparent;
+            box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+        }
+        .close-tab {
+            position: absolute;
+            right: 5px;
+            top: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .embed-container {
+            height: calc(100vh - 60px); /* Adjusted for toolbar height */
+            overflow: hidden;
+            position: relative; /* Ensure relative positioning */
+        }
+        embed {
+            width: 100%;
+            height: 100%;
+            border: none;
+            position: absolute; /* Position it absolutely */
+            top: 0; /* Align to the top */
+            left: 0; /* Align to the left */
+        }
+        /* Light mode styles */
+        .light-mode {
+            background-color: #f1f1f1; /* Light background */
+            color: #000; /* Dark text */
+        }
+        .light-mode .toolbar {
+            background-color: #ffffff; /* Light toolbar */
+            border-bottom: 1px solid #ccc;
+        }
+        .light-mode .url-bar input {
+            background-color: #fff; /* Light input background */
+            color: #000; /* Dark input text */
+        }
+        .light-mode .button {
+            background-color: #f8f8f8; /* Light button */
+            color: #000; /* Dark button text */
+        }
+        .light-mode .tab {
+            background-color: #eaeaea; /* Light tab */
+            color: #000; /* Dark tab text */
+        }
+        .light-mode .tab.active {
+            background-color: #ffffff; /* Light active tab */
+        }
+        .light-mode .tab-container {
+            background-color: #f1f1f1; /* Light tab container */
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+<div class="tab-container" id="tabContainer"></div>
+
+<div class="toolbar">
+    <div class="button" onclick="goBack()">←</div>
+    <div class="button" onclick="goForward()">→</div>
+    <div class="url-bar">
+        <input type="text" id="urlInput" placeholder="Enter URL (e.g., https://www.example.com)" onkeydown="checkEnter(event)" />
+    </div>
+    <div class="button" style="margin-left: 10px;" onclick="loadPage()">Go</div>
+    <div class="button" onclick="addTab()">+ Tab</div>
+    <div class="button" onclick="toggleFullScreen()">⛶</div>
+    <div class="button" onclick="toggleTheme()">🌙/☀️</div>
+</div>
+
+<div class="embed-container">
+    <embed id="webview" src="https://www.google.com/webhp?igu=1" allowfullscreen></embed>
+</div>
+
+<script>
+    let activeTabIndex = 0;
+    const tabs = [];
+
+    function loadPage() {
+        const urlInput = document.getElementById('urlInput');
+        let url = urlInput.value.trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+
+        if (tabs[activeTabIndex]) {
+            tabs[activeTabIndex].url = url;
+            document.getElementById('webview').src = url;
+            updateActiveTab();
+        }
+    }
+
+    function checkEnter(event) {
+        if (event.key === 'Enter') {
+            loadPage();
+        }
+    }
+
+    function addTab() {
+        const newTab = { url: 'https://www.google.com/webhp?igu=1', history: [] };
+        tabs.push(newTab);
+        const newTabIndex = tabs.length - 1;
+
+        const tabContainer = document.getElementById('tabContainer');
+        const tabDiv = createTabElement(newTabIndex);
+        tabContainer.appendChild(tabDiv);
+
+        switchTab(newTabIndex);
+        resizeTabs();
+    }
+
+    function createTabElement(index) {
+        const tabDiv = document.createElement('div');
+        tabDiv.className = 'tab';
+        tabDiv.innerText = `Tab ${index + 1}`;
+
+        const closeButton = document.createElement('span');
+        closeButton.className = 'close-tab';
+        closeButton.innerText = '✖';
+        closeButton.onclick = (e) => {
+            e.stopPropagation();
+            closeTab(index);
+        };
+
+        tabDiv.appendChild(closeButton);
+        tabDiv.onclick = () => switchTab(index);
+        return tabDiv;
+    }
+
+    function switchTab(index) {
+        if (index < 0 || index >= tabs.length) return;
+        const tabContainer = document.getElementById('tabContainer');
+        const tabsDivs = tabContainer.getElementsByClassName('tab');
+
+        Array.from(tabsDivs).forEach(tab => tab.classList.remove('active'));
+        tabsDivs[index].classList.add('active');
+
+        activeTabIndex = index;
+        const currentTab = tabs[activeTabIndex];
+
+        document.getElementById('urlInput').value = currentTab.url;
+        document.getElementById('webview').src = currentTab.url;
+
+        // Update history for the current tab
+        currentTab.history = []; // Reset history on tab switch
+    }
+
+    function closeTab(index) {
+        if (tabs.length === 0) return; // No tabs to close
+
+        tabs.splice(index, 1);
+        const tabContainer = document.getElementById('tabContainer');
+        const tabsDivs = tabContainer.getElementsByClassName('tab');
+
+        tabContainer.removeChild(tabsDivs[index]);
+
+        if (tabs.length === 0) {
+            document.getElementById('webview').src = "";
+            document.getElementById('urlInput').value = "";
+            activeTabIndex = -1; // Reset
+        } else {
+            // Automatically switch to the previous tab or the next tab
+            if (index <= activeTabIndex) {
+                activeTabIndex = Math.max(activeTabIndex - 1, 0);
+            }
+            switchTab(activeTabIndex); // Switch to new active tab
+        }
+
+        resizeTabs();
+    }
+
+    function goBack() {
+        const embed = document.getElementById('webview');
+        embed.contentWindow.history.back();
+        updateActiveTab();
+    }
+
+    function goForward() {
+        const embed = document.getElementById('webview');
+        embed.contentWindow.history.forward();
+        updateActiveTab();
+    }
+
+    function updateActiveTab() {
+        if (tabs[activeTabIndex]) {
+            const currentTab = tabs[activeTabIndex];
+            document.getElementById('urlInput').value = currentTab.url;
+        }
+    }
+
+    function toggleFullScreen() {
+        const embed = document.getElementById('webview');
+        if (!document.fullscreenElement) {
+            embed.requestFullscreen().catch(err => console.log(err));
+        } else {
+            document.exitFullscreen();
+        }
+    }
+
+    function resizeTabs() {
+        const tabContainer = document.getElementById('tabContainer');
+        const tabsDivs = tabContainer.getElementsByClassName('tab');
+        const totalTabs = tabsDivs.length;
+        const tabWidth = totalTabs > 0 ? (tabContainer.clientWidth / totalTabs) - 5 : 0;
+
+        Array.from(tabsDivs).forEach(tab => {
+            tab.style.flexBasis = `${tabWidth}px`;
+        });
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+        document.body.classList.toggle('light-mode'); // Add light-mode class
+    }
+
+    // Listen for changes to the embed's src attribute
+    document.getElementById('webview').addEventListener('load', function() {
+        if (tabs[activeTabIndex]) {
+            updateActiveTab();
+        }
+    });
+
+    // Initializing with the first tab
+    addTab();
+</script>
+
+</body>
+</html>
